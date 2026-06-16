@@ -103,6 +103,16 @@ else
     brew install peco
 fi
 
+
+local_files=(~/.zprofile_local ~/.zshrc_local)
+for local_file in "${local_files[@]}"; do
+    if [ -f "$local_file" ]; then
+        echo "\033[33m$local_file already exists\033[m"
+    else
+        touch "$local_file"
+    fi
+done
+
 # Link dotfiles from src directory
 link_dotfile() {
     local src_file=$1
