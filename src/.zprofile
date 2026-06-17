@@ -16,8 +16,6 @@ export PATH=$PATH:~/.local/bin
 export GOPATH="$HOME/.go"
 export PATH="$GOPATH/bin:$PATH"
 export GHQ_ROOT=~/.ghq
-export ANDROID_HOME=~/android-sdk-macosx
-export PATH=$ANDROID_HOME/bin:$PATH
 
 # Environments for Homebrew (with Apple Silicon)
 if [[ -e /opt/homebrew/bin/brew ]]; then
