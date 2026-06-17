@@ -1,7 +1,9 @@
-#!/bin/sh
+#!/bin/zsh
 
-DIFF=$(git diff --name-only $1...$2 | awk '{print $1}')
-if echo "$DIFF" | grep -qE '^\.zshrc$|^\.zprofile$'; then
-    echo "Reloading shell configuration..."
-    exec /bin/zsh -l
+DIFF=$(git diff --name-only $1..$2 | awk '{print $1}')
+if echo "$DIFF" | grep -qE '^src/\.zshrc$|^src/\.zprofile$'; then
+    echo "\e[32mShell configuration changed. Reload your shell to apply changes.\e[0m"
+    RELOAD_COMMAND='exec /bin/zsh -l'
+    echo "\e[32m  $ ${RELOAD_COMMAND}\e[0m"
+    echo "$RELOAD_COMMAND" | pbcopy
 fi
