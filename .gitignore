@@ -2,3 +2,4 @@
 .aws
 *_local
 *.local
+*.sample

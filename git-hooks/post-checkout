@@ -1,0 +1,7 @@
+#!/bin/sh
+
+DIFF=$(git diff --name-only $1...$2 | awk '{print $1}')
+if echo "$DIFF" | grep -qE '^\.zshrc$|^\.zprofile$'; then
+    echo "Reloading shell configuration..."
+    exec /bin/zsh -l
+fi
