@@ -1,8 +1,8 @@
 # 履歴ファイルの保存先
-# export HISTFILE=${HOME}/.zhistory
-# export SAVEHIST=50
+export HISTFILE=${HOME}/.zhistory
+export SAVEHIST=50
 # 履歴をインクリメンタルに追加
-# setopt inc_append_history
+setopt inc_append_history
 # インクリメンタルからの検索
 bindkey "^R" history-incremental-search-backward
 bindkey "^S" history-incremental-search-forward
@@ -13,16 +13,16 @@ export PATH="$HOME/.rbenv/bin:$PATH"
 export PATH=$PATH:~/.nodebrew/current/bin
 export PATH="$HOME/.pyenv/shims:$PATH"
 export PATH=$PATH:~/.local/bin
-export PATH="$HOME/Library/Android/sdk/platform-tools:$PATH"
 export GOPATH="$HOME/.go"
 export PATH="$GOPATH/bin:$PATH"
 export GHQ_ROOT=~/.ghq
 
-# GitHub token
-export GITHUB_ACCESS_TOKEN='{insert your GitHub Token}'
-export HOMEBREW_GITHUB_API_TOKEN="$GITHUB_ACCESS_TOKEN"
-export SSGH_TOKEN="$GITHUB_ACCESS_TOKEN"
-export LICENSE_PLIST_GITHUB_TOKEN="$GITHUB_ACCESS_TOKEN"
-export GITHUB_TOKEN="$GITHUB_ACCESS_TOKEN"
-
 # Environments for Homebrew (with Apple Silicon)
+if [[ -e /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
+# Load local .zprofile if exists
+if [ -f ~/.zprofile_local ]; then
+    source ~/.zprofile_local
+fi

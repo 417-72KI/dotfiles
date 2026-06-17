@@ -1,2 +1,8 @@
-# MacUtilties
-Utilty Scripts to initialize new Mac, macOS VMs, etc...
+# dotfiles
+personal dotfiles
+
+## Installation
+
+```zsh
+./.bin/setup.sh
+```

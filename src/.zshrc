@@ -119,12 +119,23 @@ function drun() {
     docker run $(eval echo $OPTION) -it $IMAGE $@
 }
 
+# Alias for Danger-Swift
+function danger-pr() {
+    if [ -f "Dangerfile.swift" ]; then
+        DANGER_GITHUB_API_TOKEN=$(gh auth token) danger-swift pr --danger-js-path "$(dirname $(which danger-swift))/danger" $(gh pr view --json url --jq '.url')
+    else # TODO: Support Danger-Ruby, Danger-JS or Danger-Kotlin
+        echo "Dangerfile.swift not found in the current directory." 1>&2
+    fi
+}
+
 # Other custom aliases or functions
 alias readme='open $(find . -type d \( -name "Carthage" -o -name "Pods" -o -name "vendor" \) -prune -o -type f -name "README*" -print | peco)'
 alias renovate-config-validator='drun -mg -e RENOVATE_TOKEN=$GITHUB_TOKEN -i renovate/renovate:slim renovate-config-validator'
 
 alias coderc='code ~/.zshrc'
+alias coderc_local='code ~/.zshrc_local'
 alias codeprofile='code ~/.zprofile'
+alias codeprofile_local='code ~/.zprofile_local'
 
 function light() {
     if [ -z "$2" ]; then
@@ -145,14 +156,29 @@ function gbc() {
         echo -e "\e[31mNo branch name specified.\e[m" 1>&2
         return
     fi
-    gf && gb --no-track $1 origin/$(ghead)
-    git switch $1
+    gf && git switch --no-track -c $1 origin/$(ghead)
+}
+
+# Replace `origin` with forked repo
+function fetchfork() {
+    GITHUB_USER=$(gh api /user --jq .login | tr -d '"')
+    UPSTREAM="$(git remote -v | grep origin | head -1 | awk '{ print $2 }')"
+    if [[ "${UPSTREAM}" = *":${GITHUB_USER}/"* ]];then
+        echo 'Already forked, or my own repo.'
+        return
+    fi
+    git remote rename origin upstream
+    FORKED="$(echo "${UPSTREAM}" | sed -E "s/^(.*)\/(.*)\/(.*)$/\1\/${GITHUB_USER}\/\3/g")"
+    git remote add origin "${FORKED}"
+    git fetch --all --prune
 }
 
 # Record iPhone simulator
 function capsim() {
+    trap '' 2 # Ignore Ctrl+C
     TIMESTAMP=$(date '+%Y%m%d%H%M%S')
     xcrun simctl io booted recordVideo ~/Desktop/capture-$TIMESTAMP.mp4
+    trap 2 # Restore Ctrl+C
 
     read yn\?"Convert to gif? (y/N): "
     case "$yn" in [yY]*) ;; *) echo "abort." ; return ;; esac
@@ -160,3 +186,42 @@ function capsim() {
     ffmpeg -i ~/Desktop/capture-$TIMESTAMP.mp4 -r 24 ~/Desktop/capture-$TIMESTAMP.gif
 }
 
+# Record Android device via adb
+function adbcap() {
+    TIMESTAMP=$(date '+%Y%m%d%H%M%S')
+    echo "Recording: /sdcard/capture-$TIMESTAMP.mp4"
+
+    trap "echo 'Press ^C again to stop recording.'" 2
+    adb shell screenrecord /sdcard/capture-$TIMESTAMP.mp4
+    sleep 5
+    trap 2
+
+    adb pull /sdcard/capture-$TIMESTAMP.mp4 ~/Desktop/capture-$TIMESTAMP.mp4
+    adb shell rm /sdcard/capture-$TIMESTAMP.mp4
+}
+
+# Screenshot Android device via adb
+function adbss() {
+    TIMESTAMP=$(date '+%Y%m%d%H%M%S')
+    adb shell screencap -p /sdcard/screenshot-$TIMESTAMP.png
+    adb pull /sdcard/screenshot-$TIMESTAMP.png ~/Desktop/screenshot-$TIMESTAMP.png
+    adb shell rm /sdcard/screenshot-$TIMESTAMP.png
+}
+
+# Convert MOV to animated GIF
+function mov2gif() {
+    ffmpeg -i "$1" -r 24 "${1%.mov}.gif"
+}
+
+# Convert HEIC to JPG
+function heic2jpg() {
+    for BASE_FILE in $@; do
+        OUTPUT_FILE=$(echo $BASE_FILE | sed -E 's/(.*)\.(heic|HEIC)/\1.jpg/g')
+        sips --setProperty format jpeg "$BASE_FILE" --out "$OUTPUT_FILE"
+    done
+}
+
+# Load local .zshrc if exists
+if [ -f ~/.zshrc_local ]; then
+    source ~/.zshrc_local
+fi
