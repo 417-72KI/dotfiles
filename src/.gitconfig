@@ -1,0 +1,3 @@
+[hook "secret-scan"]
+    event = pre-commit
+    command = gitleaks detect --source .
