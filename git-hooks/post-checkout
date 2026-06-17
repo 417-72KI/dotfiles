@@ -7,3 +7,11 @@ if echo "$DIFF" | grep -qE '^src/\.zshrc$|^src/\.zprofile$'; then
     echo "\e[32m  $ ${RELOAD_COMMAND}\e[0m"
     echo "$RELOAD_COMMAND" | pbcopy
 fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+for dotfile in "${REPO_ROOT:a}"/src/.*; do
+    if [ ! -e "$HOME/$(basename "$dotfile")" ]; then
+        echo "\e[34mUnlinked dotfile '${dotfile}' detected. Linking to $HOME/$(basename "$dotfile")\e[m"
+        ln -s "$dotfile" "$HOME/$(basename "$dotfile")"
+    fi
+done
