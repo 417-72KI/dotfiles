@@ -2,26 +2,29 @@
 
 set -eo pipefail
 
-# ネットワークドライブで.DS_Storeを作成しないようにする
-if [ "$(defaults read com.apple.desktopservices DSDontWriteNetworkStores)" != 1 ]; then
-    defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool YES
-fi
+# For macOS
+if [[ $OSTYPE == darwin* && $CPUTYPE == arm64 ]]; then
+    # ネットワークドライブで.DS_Storeを作成しないようにする
+    if [ "$(defaults read com.apple.desktopservices DSDontWriteNetworkStores)" != 1 ]; then
+        defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool YES
+    fi
 
-# Xcode13.2~でビルドを高速化する
-if [ "$(defaults read com.apple.dt.XCBuild EnableSwiftBuildSystemIntegration)" != 1 ]; then
-    defaults write com.apple.dt.XCBuild EnableSwiftBuildSystemIntegration -bool YES
-fi
+    # Xcode13.2~でビルドを高速化する
+    if [ "$(defaults read com.apple.dt.XCBuild EnableSwiftBuildSystemIntegration)" != 1 ]; then
+        defaults write com.apple.dt.XCBuild EnableSwiftBuildSystemIntegration -bool YES
+    fi
 
-# 隠しファイルを表示するようにする
-if [ "$(defaults read com.apple.finder AppleShowAllFiles)" != 1 ]; then
-    defaults write com.apple.finder AppleShowAllFiles -bool YES
-    echo 'Reboot Finder...'
-    killall Finder
-fi
+    # 隠しファイルを表示するようにする
+    if [ "$(defaults read com.apple.finder AppleShowAllFiles)" != 1 ]; then
+        defaults write com.apple.finder AppleShowAllFiles -bool YES
+        echo 'Reboot Finder...'
+        killall Finder
+    fi
 
-# Xcodeでビルド時間を表示する
-if [ "$(defaults read com.apple.dt.Xcode ShowBuildOperationDuration)" != 1 ]; then
-    defaults write com.apple.dt.Xcode ShowBuildOperationDuration -bool YES
+    # Xcodeでビルド時間を表示する
+    if [ "$(defaults read com.apple.dt.Xcode ShowBuildOperationDuration)" != 1 ]; then
+        defaults write com.apple.dt.Xcode ShowBuildOperationDuration -bool YES
+    fi
 fi
 
 # Homebrewインストール
