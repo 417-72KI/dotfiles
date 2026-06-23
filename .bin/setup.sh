@@ -107,7 +107,7 @@ else
 fi
 
 
-local_files=(~/.zprofile_local ~/.zshrc_local)
+local_files=(~/.zprofile_local ~/.zshrc_local ~/.gitconfig_local ~/.stCommitMsg)
 for local_file in "${local_files[@]}"; do
     if [ -f "$local_file" ]; then
         echo "\033[33m$local_file already exists\033[m"

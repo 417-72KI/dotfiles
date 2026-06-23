@@ -1,0 +1,31 @@
+[include]
+	path = .gitconfig_local
+[core]
+	excludesfile = ~/.gitignore_global
+	quotepath = false
+[init]
+	defaultBranch = main
+[submodule]
+	recurse = true
+[branch]
+	autosetuprebase = always
+[pull]
+	rebase = merges
+[rebase]
+	autostash = true
+	abbreviateCommands = true
+[commit]
+	template = ~/.stCommitMsg
+[push]
+	autoSetupRemote = true
+	default = current
+[rerere]
+	enabled = true
+[filter "lfs"]
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
+[hook "secret-scan"]
+	event = pre-commit
+	command = gitleaks detect --source .
