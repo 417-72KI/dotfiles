@@ -4,5 +4,5 @@ personal dotfiles
 ## Installation
 
 ```zsh
-./bin/setup.sh
+/bin/zsh -c "$(curl -fsSL https://raw.githubusercontent.com/417-72KI/dotfiles/main/bin/install.sh)"
 ```
