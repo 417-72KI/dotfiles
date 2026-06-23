@@ -4,5 +4,5 @@ personal dotfiles
 ## Installation
 
 ```zsh
-./.bin/setup.sh
+./bin/setup.sh
 ```

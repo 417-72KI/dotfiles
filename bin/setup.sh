@@ -109,9 +109,8 @@ fi
 
 local_files=(~/.zprofile_local ~/.zshrc_local ~/.gitconfig_local ~/.stCommitMsg)
 for local_file in "${local_files[@]}"; do
-    if [ -f "$local_file" ]; then
-        echo "\033[33m$local_file already exists\033[m"
-    else
+    if [ ! -f "$local_file" ]; then
+        echo "\033[33m$local_file does not exist, creating...\033[m"
         touch "$local_file"
     fi
 done
@@ -144,11 +143,12 @@ done
 # link git hooks
 GIT_DIR="${REPO_ROOT}/.git"
 HOOKS_DIR="${GIT_DIR}/hooks"
-if [ -d "$HOOKS_DIR" ]; then
+if [ -d "$HOOKS_DIR" ] && [ ! -L "$HOOKS_DIR" ]; then
     echo "\033[33mRemoving existing hooks directory...\033[m"
     rm -rf "$HOOKS_DIR"
     cd "$GIT_DIR"
     ln -s "../git-hooks" hooks
+    cd "${REPO_ROOT}"
 fi
 
 exec /bin/zsh -l
