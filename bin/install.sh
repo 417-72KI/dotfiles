@@ -13,7 +13,7 @@ REPO_DESTINATION=${REPO_DESTINATION:-$DEFAULT_REPO_DESTINATION}
 if [ ! -L ~/.zprofile ] && [ ! -L ~/.zshrc ]; then
     git clone "$REPO_URL" "$REPO_DESTINATION"
 elif [ "$(dirname $(readlink -f ~/.zprofile))" = "$(dirname $(readlink -f ~/.zshrc))" ]; then
-    REPO_DESTINATION=$(dirname $(readlink -f ~/.zprofile))
+    REPO_DESTINATION="$(git -C "$(dirname $(readlink -f ~/.zprofile))" rev-parse --show-toplevel)"
 else
     echo "\e[31mError: ~/.zprofile and ~/.zshrc are not symlinks to the same directory.\e[0m"
     echo "\e[31mPlease remove or fix the symlinks before running this script.\e[0m"
