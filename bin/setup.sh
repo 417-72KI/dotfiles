@@ -106,7 +106,6 @@ else
     brew install peco
 fi
 
-
 local_files=(~/.zprofile_local ~/.zshrc_local ~/.gitconfig_local ~/.stCommitMsg)
 for local_file in "${local_files[@]}"; do
     if [ ! -f "$local_file" ]; then
