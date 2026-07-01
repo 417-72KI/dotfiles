@@ -22,6 +22,11 @@ if [[ -e /opt/homebrew/bin/brew ]]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
+# Environments for SDKMAN!
+export SDKMAN_DIR=$(brew --prefix sdkman-cli)/libexec
+[[ -s "${SDKMAN_DIR}/bin/sdkman-init.sh" ]] && source "${SDKMAN_DIR}/bin/sdkman-init.sh"
+export JAVA_HOME=${SDKMAN_DIR}/candidates/java/current
+
 # Load local .zprofile if exists
 if [ -f ~/.zprofile_local ]; then
     source ~/.zprofile_local
