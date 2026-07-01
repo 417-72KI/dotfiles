@@ -17,11 +17,11 @@ for dotfile in "${REPO_ROOT:a}"/src/.*; do
     fi
 done
 
-if echo "$DIFF" | grep -qE '^src/\.Brewfile$'; then
+if echo "$DIFF" | grep -qE '^src/\.homebrew\/Brewfile$'; then
     brew bundle install -g --no-upgrade
 fi
 
-echo "$DIFF" | grep -E '^src/\.Brewfile\..+$' | while read -r brewfile; do
+echo "$DIFF" | grep -E '^src/\.homebrew\/Brewfile\..+$' | while read -r brewfile; do
     echo "\e[32mInstalling packages from ${brewfile#src/}\e[0m"
     brew bundle install --file="$HOME/${brewfile#src/}" --no-upgrade
 done
