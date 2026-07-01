@@ -6,6 +6,7 @@ if echo "$DIFF" | grep -qE '^src/\.zshrc$|^src/\.zprofile$'; then
     RELOAD_COMMAND='exec /bin/zsh -l'
     echo "\e[32m  $ ${RELOAD_COMMAND}\e[0m"
     echo "$RELOAD_COMMAND" | pbcopy
+    eval "$RELOAD_COMMAND"
 fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -14,4 +15,13 @@ for dotfile in "${REPO_ROOT:a}"/src/.*; do
         echo "\e[34mUnlinked dotfile '${dotfile}' detected. Linking to $HOME/$(basename "$dotfile")\e[m"
         ln -s "$dotfile" "$HOME/$(basename "$dotfile")"
     fi
+done
+
+if echo "$DIFF" | grep -qE '^src/\.homebrew\/Brewfile$'; then
+    brew bundle install -g --no-upgrade
+fi
+
+echo "$DIFF" | grep -E '^src/\.homebrew\/Brewfile[._].+$' | while read -r brewfile; do
+    echo "\e[32mInstalling packages from ${brewfile#src/}\e[0m"
+    brew bundle install --file="$HOME/${brewfile#src/}" --no-upgrade
 done

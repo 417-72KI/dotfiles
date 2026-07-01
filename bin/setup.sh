@@ -35,12 +35,8 @@ else
     eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
-# rbenvインストール
-if which rbenv > /dev/null; then
-    echo '\033[33mrbenv already exists\033[m'
-else
-    brew install rbenv rbenv-communal-gems
-fi
+# Homebrewで必要なパッケージをインストール
+brew bundle install -g --no-upgrade
 
 # Rubyを最新版に
 RUBY_LATEST_VERSION=$(rbenv install -l | grep -v - | tail -1)
@@ -50,13 +46,11 @@ if [ "$(rbenv versions | grep "$RUBY_LATEST_VERSION")" = '' ]; then
     rbenv rehash
 fi
 
-# Node.jsインストール
-if which nodebrew > /dev/null; then
-    echo '\033[33mnodebrew already exists\033[m'
-else
-    brew install nodebrew
+# Node.js最新版インストール
+if ! which node > /dev/null; then
     mkdir -p ~/.nodebrew/src
-    nodebrew install-binary latest
+    nodebrew install latest
+    nodebrew use latest
 fi
 
 # ssh公開鍵作成
@@ -78,32 +72,6 @@ Host github.com
 Host *
     UseKeychain yes
 EOS
-fi
-
-# jqインストール
-if which jq > /dev/null; then
-    echo '\033[33mjq already installed\033[m'
-else
-    brew install jq
-fi
-
-# ghインストール
-if which gh > /dev/null; then
-    echo '\033[33mgh already installed\033[m'
-else
-    brew install gh
-fi
-
-# ghq & pecoインストール
-if which ghq > /dev/null; then
-    echo '\033[33mghq already installed\033[m'
-else
-    brew install ghq
-fi
-if which peco > /dev/null; then
-    echo '\033[33mpeco already installed\033[m'
-else
-    brew install peco
 fi
 
 local_files=(~/.zprofile_local ~/.zshrc_local ~/.gitconfig_local ~/.stCommitMsg)
