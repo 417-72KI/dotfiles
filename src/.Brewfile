@@ -58,5 +58,3 @@ cask "visual-studio-code"
 # Install and switch between multiple versions of Xcode
 cask "xcodes-app"
 go "golang.org/x/tools/gopls"
-npm "firebase-tools"
-npm "yarn"
