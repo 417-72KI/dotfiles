@@ -1,4 +1,5 @@
 tap "carlocab/personal"
+tap "sdkman/tap"
 brew "betterleaks"
 brew "gh"
 brew "ghq"
@@ -18,6 +19,7 @@ brew "tmux"
 brew "xcbeautify"
 brew "yq"
 brew "carlocab/personal/unrar", trusted: true
+brew "sdkman/tap/sdkman-cli", trusted: true
 cask "antigravity"
 cask "antigravity-cli"
 cask "claude-code"
