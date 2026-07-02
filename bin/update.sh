@@ -1,9 +1,13 @@
 #!/bin/zsh
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-DIFF=$@
+DIFF=("$@")
 
-if echo "${DIFF[@]}" | grep -qE '^src/\.zshrc$|^src/\.zprofile$'; then
+if [[ -n "${(M)DIFF[@]:#git-hooks/*}" ]]; then
+    echo "\e[32m[INFO] git-hooks updated.\e[0m"
+fi
+
+if [[ -n "${(M)DIFF[@]:#src/.zshrc}" ]] || [[ -n "${(M)DIFF[@]:#src/.zprofile}" ]]; then
     echo "\e[32mShell configuration changed. Reload your shell to apply changes.\e[0m"
     RELOAD_COMMAND='exec /bin/zsh -l'
     echo "\e[32m  $ ${RELOAD_COMMAND}\e[0m"
@@ -18,11 +22,11 @@ for dotfile in "${REPO_ROOT:a}"/src/.*; do
     fi
 done
 
-if echo "${DIFF[@]}" | grep -qE '^src/\.homebrew\/Brewfile$'; then
+if echo "${(M)DIFF[@]:#git-hooks/*}" | grep -qE '^src/\.homebrew\/Brewfile$'; then
     brew bundle install -g --no-upgrade
 fi
 
-echo "${DIFF[@]}" | grep -E '^src/\.homebrew\/Brewfile[._].+$' | while read -r brewfile; do
+echo "${(M)DIFF[@]:#git-hooks/*}" | grep -E '^src/\.homebrew\/Brewfile[._].+$' | while read -r brewfile; do
     echo "\e[32mInstalling packages from ${brewfile#src/}\e[0m"
     brew bundle install --file="$HOME/${brewfile#src/}" --no-upgrade
 done
