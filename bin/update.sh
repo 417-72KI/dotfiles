@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-DIFF=$1
+DIFF=$@
 
 if echo "$DIFF" | grep -qE '^src/\.zshrc$|^src/\.zprofile$'; then
     echo "\e[32mShell configuration changed. Reload your shell to apply changes.\e[0m"
