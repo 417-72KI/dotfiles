@@ -1,5 +1,5 @@
 #!/bin/zsh
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-IFS=$'\n' DIFF=($(git diff --name-only "$1" "$2"))
-"${REPO_ROOT:a}/bin/update.sh" $DIFF
+DIFF=("${(@f)$(git diff --name-only "$1" "$2")}")
+"${REPO_ROOT:a}/bin/update.sh" "${DIFF[@]}"
