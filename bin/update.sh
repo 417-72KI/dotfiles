@@ -8,7 +8,7 @@ if [[ -n "${(M)DIFF[@]:#git-hooks/*}" ]]; then
 fi
 
 if [[ -n "${(M)DIFF[@]:#src/.zshrc}" ]] || [[ -n "${(M)DIFF[@]:#src/.zprofile}" ]]; then
-    echo "\e[32mShell configuration changed. Reload your shell to apply changes.\e[0m"
+    echo "\e[32m[INFO] Shell configuration changed. Reload your shell to apply changes.\e[0m"
     RELOAD_COMMAND='exec /bin/zsh -l'
     echo "\e[32m  $ ${RELOAD_COMMAND}\e[0m"
     echo "$RELOAD_COMMAND" | pbcopy
@@ -17,16 +17,18 @@ fi
 
 for dotfile in "${REPO_ROOT:a}"/src/.*; do
     if [ ! -e "$HOME/$(basename "$dotfile")" ]; then
-        echo "\e[34mUnlinked dotfile '${dotfile}' detected. Linking to $HOME/$(basename "$dotfile")\e[m"
+        echo "\e[34m[INFO] Unlinked dotfile '${dotfile}' detected. Linking to $HOME/$(basename "$dotfile")\e[m"
         ln -s "$dotfile" "$HOME/$(basename "$dotfile")"
     fi
 done
 
-if echo "${(M)DIFF[@]:#git-hooks/*}" | grep -qE '^src/\.homebrew\/Brewfile$'; then
+if [[ -n "${(M)DIFF[@]:#src/.homebrew/Brewfile}" ]]; then
+    echo "\e[32m[INFO] Brewfile changed. Installing packages...\e[0m"
     brew bundle install -g --no-upgrade
 fi
 
-echo "${(M)DIFF[@]:#git-hooks/*}" | grep -E '^src/\.homebrew\/Brewfile[._].+$' | while read -r brewfile; do
-    echo "\e[32mInstalling packages from ${brewfile#src/}\e[0m"
-    brew bundle install --file="$HOME/${brewfile#src/}" --no-upgrade
+for brewfile in "${(M)DIFF[@]:#src/.homebrew/Brewfile_*}"; do
+    brewfile="${brewfile#src/}"
+    echo "\e[32m[INFO] ${brewfile} changed. Installing packages...\e[0m"
+    brew bundle install --file="$HOME/${brewfile}" --no-upgrade
 done
