@@ -1,5 +1,8 @@
-.ssh
-.aws
 *_local
 *.local
 *.sample
+.ssh
+.aws
+.stCommitMsg
+package.json
+package-lock.json

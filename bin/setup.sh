@@ -2,6 +2,9 @@
 
 set -eo pipefail
 
+SCRIPT_DIR="${0:A:h}"
+REPO_ROOT="${SCRIPT_DIR}/.."
+
 # For macOS
 if [[ $OSTYPE == darwin* && $CPUTYPE == arm64 ]]; then
     # ネットワークドライブで.DS_Storeを作成しないようにする
@@ -74,11 +77,11 @@ Host *
 EOS
 fi
 
-local_files=(~/.zprofile_local ~/.zshrc_local ~/.gitconfig_local ~/.stCommitMsg)
+local_files=(.zprofile_local .zshrc_local .gitconfig_local .stCommitMsg)
 for local_file in "${local_files[@]}"; do
-    if [ ! -f "$local_file" ]; then
+    if [ ! -f "${REPO_ROOT}/src/${local_file}" ]; then
         echo "\033[33m$local_file does not exist, creating...\033[m"
-        touch "$local_file"
+        touch "${REPO_ROOT}/src/${local_file}"
     fi
 done
 
@@ -98,8 +101,6 @@ link_dotfile() {
 }
 
 # Process all dotfiles in src directory
-SCRIPT_DIR="${0:A:h}"
-REPO_ROOT="${SCRIPT_DIR}/.."
 for dotfile in "${REPO_ROOT:a}"/src/.*; do
     echo "\033[34mProcessing $dotfile...\033[m"
     if [ -f "$dotfile" ] && [ "$(basename "$dotfile")" != "." ] && [ "$(basename "$dotfile")" != ".." ]; then
