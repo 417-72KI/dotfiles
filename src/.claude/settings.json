@@ -1,0 +1,20 @@
+{
+    "permissions": {
+        "allow": [
+            "List(*)",
+            "Fetch(https://*)",
+            "Bash(ls:*)",
+            "Bash(rg:*)",
+            "Bash(mv:*)"
+        ],
+        "deny": [
+            "Bash(rm -rf *)",
+            "Bash(git push --force *)",
+            "Bash(git push --force-with-lease *)",
+            "Bash(git reset --hard *)",
+            "Bash(git clean -f *)",
+            "Bash(git checkout -- .)",
+            "Bash(git restore .)"
+        ]
+    }
+}
