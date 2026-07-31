@@ -90,10 +90,10 @@ link_dotfile() {
     local src_file=$1
     local dest_file="$HOME/$(basename "$src_file")"
     
-    if [ -f "$dest_file" ]; then
+    if [ -e "$dest_file" ] || [ -L "$dest_file" ]; then
         if [[ ! -L "$dest_file" ]]; then
             mv "$dest_file" "$dest_file.bak"
-        else 
+        else
             rm "$dest_file"
         fi
     fi
@@ -103,7 +103,7 @@ link_dotfile() {
 # Process all dotfiles in src directory
 for dotfile in "${REPO_ROOT:a}"/src/.*; do
     echo "\033[34mProcessing $dotfile...\033[m"
-    if [ -f "$dotfile" ] && [ "$(basename "$dotfile")" != "." ] && [ "$(basename "$dotfile")" != ".." ]; then
+    if { [ -f "$dotfile" ] || [ -d "$dotfile" ]; } && [ "$(basename "$dotfile")" != "." ] && [ "$(basename "$dotfile")" != ".." ]; then
         link_dotfile "$dotfile"
     fi
 done
