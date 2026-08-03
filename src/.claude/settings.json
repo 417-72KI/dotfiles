@@ -17,5 +17,10 @@
       "Bash(git restore .)"
     ]
   },
-  "theme": "auto"
+  "model": "opusplan",
+  "theme": "auto",
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh"
+  }
 }
