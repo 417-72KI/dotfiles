@@ -6,6 +6,7 @@ input=$(cat)
 cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd')
 dir=$(basename "$cwd")
 model=$(echo "$input" | jq -r '.model.display_name')
+session_id=$(echo "$input" | jq -r '.session_id // empty')
 used=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 tokens_used=$(echo "$input" | jq -r '.context_window.total_input_tokens // empty')
 tokens_limit=$(echo "$input" | jq -r '.context_window.context_window_size // empty')
@@ -23,7 +24,7 @@ branch=$(git -C "$cwd" --no-optional-locks branch --show-current 2>/dev/null)
 
 # Colors tuned for readability on dark terminal backgrounds (no bold)
 CYAN='\033[36m'
-BLUE='\033[34m'
+WHITE='\033[97m'
 MAGENTA='\033[35m'
 GREEN='\033[32m'
 YELLOW='\033[33m'
@@ -32,9 +33,9 @@ GRAY='\033[90m'
 RESET='\033[0m'
 
 if [ -n "$branch" ]; then
-    dir_display="${CYAN}${dir}${RESET} ${BLUE}(${branch})${RESET}"
+    dir_display="${WHITE}${dir}${RESET} ${CYAN}(${branch})${RESET}"
 else
-    dir_display="${CYAN}${dir}${RESET}"
+    dir_display="${WHITE}${dir}${RESET}"
 fi
 
 if [ -n "$used" ]; then
@@ -79,6 +80,87 @@ fmt_rate() {
     fi
 }
 
+# --- Other running Claude Code sessions (from ~/.claude/sessions/*.json) ---
+SESSIONS_DIR="${CLAUDE_SESSIONS_DIR:-$HOME/.claude/sessions}"
+sess_pid=() sess_sid=() sess_name=() sess_status=() sess_cwd=()
+sess_overflow=0
+sess_max=8
+
+if [ -d "$SESSIONS_DIR" ]; then
+    session_json_files=("$SESSIONS_DIR"/*.json)
+    if [ -e "${session_json_files[0]}" ]; then
+        # Use \x1f (unit separator) instead of @tsv: bash's IFS treats tab as
+        # whitespace and collapses consecutive tabs, which breaks empty fields
+        # (e.g. a session with no "name").
+        session_lines=$(jq -s -r '
+            [.[] | select(.kind == "interactive")]
+            | sort_by(.startedAt)
+            | .[] | [(.pid|tostring), (.sessionId // ""), (.name // ""), (.status // ""), .cwd] | join("")
+        ' "${session_json_files[@]}" 2>/dev/null)
+
+        sess_seen=0
+        while IFS=$'\x1f' read -r s_pid s_sid s_name s_status s_cwd; do
+            [ -z "$s_pid" ] && continue
+            kill -0 "$s_pid" 2>/dev/null || continue
+            [ -z "$s_name" ] && s_name=$(basename "$s_cwd")
+            sess_seen=$((sess_seen + 1))
+            if [ "$sess_seen" -gt "$sess_max" ]; then
+                sess_overflow=$((sess_overflow + 1))
+                continue
+            fi
+            sess_pid+=("$s_pid")
+            sess_sid+=("$s_sid")
+            sess_name+=("$s_name")
+            sess_status+=("$s_status")
+            sess_cwd+=("$s_cwd")
+        done <<< "$session_lines"
+    fi
+fi
+
+sess_name_width=0
+for n in "${sess_name[@]}"; do
+    if [ "${#n}" -gt "$sess_name_width" ]; then
+        sess_name_width=${#n}
+    fi
+done
+sess_status_width=7 # length of "waiting", the longest status value
+
+render_session_line() {
+    local sid="$1" name="$2" status="$3" cwd_raw="$4"
+    local marker name_disp status_color status_disp cwd_disp prefix_len max_cwd
+
+    if [ -n "$session_id" ] && [ "$sid" = "$session_id" ]; then
+        marker='▶ '
+        name_disp="${WHITE}$(printf '%-*s' "$sess_name_width" "$name")${RESET}"
+    else
+        marker='  '
+        name_disp="$(printf '%-*s' "$sess_name_width" "$name")"
+    fi
+
+    case "$status" in
+        busy) status_color=$YELLOW ;;
+        waiting) status_color=$RED ;;
+        idle) status_color=$GRAY ;;
+        shell) status_color=$CYAN ;;
+        *) status_color=$GRAY; status='-' ;;
+    esac
+    status_disp="${status_color}$(printf '%-*s' "$sess_status_width" "$status")${RESET}"
+
+    cwd_disp="${cwd_raw/#$HOME/~}"
+    if [ -n "$COLUMNS" ] && [ "$COLUMNS" -gt 0 ]; then
+        prefix_len=$(( 2 + sess_name_width + 2 + sess_status_width + 2 ))
+        max_cwd=$(( COLUMNS - prefix_len - 1 ))
+        if [ "$max_cwd" -lt 5 ]; then
+            max_cwd=5
+        fi
+        if [ "${#cwd_disp}" -gt "$max_cwd" ]; then
+            cwd_disp="…${cwd_disp: -$((max_cwd - 1))}"
+        fi
+    fi
+
+    printf '%s%s  %s  %b%s%b' "$marker" "$name_disp" "$status_disp" "$GRAY" "$cwd_disp" "$RESET"
+}
+
 sep=" ${GRAY}│${RESET} "
 line="${dir_display}${sep}${MAGENTA}${model}${RESET}${sep}${ctx_color}${ctx}${RESET}"
 
@@ -96,3 +178,11 @@ if [ -n "$cost" ]; then
 fi
 
 printf '%b' "$line"
+
+for i in "${!sess_pid[@]}"; do
+    printf '\n%b' "$(render_session_line "${sess_sid[$i]}" "${sess_name[$i]}" "${sess_status[$i]}" "${sess_cwd[$i]}")"
+done
+
+if [ "$sess_overflow" -gt 0 ]; then
+    printf '\n%b' "${GRAY}  … +${sess_overflow} more${RESET}"
+fi
