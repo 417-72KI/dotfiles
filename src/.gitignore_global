@@ -6,3 +6,4 @@ tmp
 *.bak
 *.swp
 *.*_local
+**/.claude/settings.local.json
