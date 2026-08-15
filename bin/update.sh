@@ -32,3 +32,8 @@ for brewfile in "${(M)DIFF[@]:#src/.homebrew/Brewfile_*}"; do
     echo "\e[32m[INFO] ${brewfile} changed. Installing packages...\e[0m"
     brew bundle install --file="$HOME/${brewfile}" --no-upgrade
 done
+
+# Untrack persona for Google Antigravity to prevent accidental commits
+if [[ -z "$(git ls-files -v | grep '^S src/.gemini/config/plugins/persona/rules/AGENTS.md$')" ]]; then
+    git update-index --skip-worktree src/.gemini/config/plugins/persona/rules/AGENTS.md
+fi

@@ -119,4 +119,9 @@ if [ -d "$HOOKS_DIR" ] && [ ! -L "$HOOKS_DIR" ]; then
     cd "${REPO_ROOT}"
 fi
 
+# Untrack persona for Google Antigravity to prevent accidental commits
+if [[ -z "$(git -C "${REPO_ROOT:a}" ls-files -v | grep '^S src/.gemini/config/plugins/persona/rules/AGENTS.md$')" ]]; then
+    git -C "${REPO_ROOT:a}" update-index --skip-worktree src/.gemini/config/plugins/persona/rules/AGENTS.md
+fi
+
 exec /bin/zsh -l
