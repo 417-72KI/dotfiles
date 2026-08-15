@@ -1,6 +1,6 @@
 # GEMINI.md
 
-## Language Requirement
+## Language & Coding Rules
 
 - すべての対話、説明、コメントは「日本語」で行ってください。
 - 専門用語は無理に翻訳せず、一般的な技術用語（例: リファクタリング、非同期処理など）を使用してください。

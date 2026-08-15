@@ -3,3 +3,7 @@
 !GEMINI.md
 !antigravity-cli/
 !config/
+!config/plugins/
+!config/plugins/persona/
+!config/plugins/persona/*
+!config/plugins/persona/rules/AGENTS.md
