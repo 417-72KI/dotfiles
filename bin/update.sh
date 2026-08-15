@@ -34,6 +34,6 @@ for brewfile in "${(M)DIFF[@]:#src/.homebrew/Brewfile_*}"; do
 done
 
 # Untrack persona for Google Antigravity to prevent accidental commits
-if [[ -z "$(git ls-files -v | grep '^S src/.gemini/config/plugins/persona/rules/AGENTS.md$')" ]]; then
-    git update-index --skip-worktree src/.gemini/config/plugins/persona/rules/AGENTS.md
+if [[ -z "$(git -C "$REPO_ROOT" ls-files -v | grep '^S src/.gemini/config/plugins/persona/rules/AGENTS.md$')" ]]; then
+    git -C "$REPO_ROOT" update-index --skip-worktree src/.gemini/config/plugins/persona/rules/AGENTS.md
 fi
