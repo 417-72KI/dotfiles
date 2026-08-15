@@ -18,6 +18,8 @@ brew "tmux"
 brew "xcbeautify"
 brew "yq"
 brew "carlocab/personal/unrar", trusted: true
+cask "antigravity"
+cask "antigravity-cli"
 cask "claude-code"
 cask "copilot-cli"
 cask "db-browser-for-sqlite"
