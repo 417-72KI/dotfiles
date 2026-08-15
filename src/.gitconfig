@@ -28,4 +28,4 @@
 	clean = git-lfs clean -- %f
 [hook "secret-scan"]
 	event = pre-commit
-	command = gitleaks detect --source .
+	command = betterleaks git --pre-commit --staged
