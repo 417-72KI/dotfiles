@@ -108,16 +108,8 @@ for dotfile in "${REPO_ROOT:a}"/src/.*; do
     fi
 done
 
-# link git hooks
-GIT_DIR="${REPO_ROOT}/.git"
-HOOKS_DIR="${GIT_DIR}/hooks"
-if [ -d "$HOOKS_DIR" ] && [ ! -L "$HOOKS_DIR" ]; then
-    echo "\033[33mRemoving existing hooks directory...\033[m"
-    rm -rf "$HOOKS_DIR"
-    cd "$GIT_DIR"
-    ln -s "../git-hooks" hooks
-    cd "${REPO_ROOT}"
-fi
+# Configure git hooks
+git -C "${REPO_ROOT:a}" config core.hooksPath "${REPO_ROOT}/git-hooks"
 
 # Untrack persona for Google Antigravity to prevent accidental commits
 if [[ -z "$(git -C "${REPO_ROOT:a}" ls-files -v | grep '^S src/.gemini/config/plugins/persona/rules/AGENTS.md$')" ]]; then
