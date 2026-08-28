@@ -7,6 +7,14 @@ if [[ -n "${(M)DIFF[@]:#git-hooks/*}" ]]; then
     echo "\e[32m[INFO] git-hooks updated.\e[0m"
 fi
 
+# Configure git hooks
+HOOKS_DIR='git-hooks'
+if [ "$(git -C "$REPO_ROOT" config core.hooksPath)" != "$HOOKS_DIR" ]; then
+    echo "\e[32m[INFO] Update git hooks...\e[0m"
+    git -C "$REPO_ROOT" config core.hooksPath "$HOOKS_DIR"
+fi
+
+# Notify if shell configuration files have changed
 if [[ -n "${(M)DIFF[@]:#src/.zshrc}" ]] || [[ -n "${(M)DIFF[@]:#src/.zprofile}" ]]; then
     echo "\e[32m[INFO] Shell configuration changed. Reload your shell to apply changes.\e[0m"
     RELOAD_COMMAND='exec /bin/zsh -l'
