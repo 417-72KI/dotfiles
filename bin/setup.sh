@@ -109,7 +109,7 @@ for dotfile in "${REPO_ROOT:a}"/src/.*; do
 done
 
 # Configure git hooks
-git -C "${REPO_ROOT:a}" config core.hooksPath "${REPO_ROOT}/git-hooks"
+git -C "${REPO_ROOT:a}" config core.hooksPath "git-hooks"
 
 # Untrack persona for Google Antigravity to prevent accidental commits
 if [[ -z "$(git -C "${REPO_ROOT:a}" ls-files -v | grep '^S src/.gemini/config/plugins/persona/rules/AGENTS.md$')" ]]; then
