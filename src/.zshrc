@@ -171,7 +171,8 @@ function gwc() {
     return 1
   fi
   local ROOT_REPO_DIR REPO_DIR GHQ_ROOT SOURCE_BRANCH WORKTREE_DIR
-  ROOT_REPO_DIR="$(git rev-parse --show-toplevel)"
+  # The first entry of `git worktree list` is always the main worktree, even when run from a linked one.
+  ROOT_REPO_DIR="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
   REPO_DIR="$ROOT_REPO_DIR"
   GHQ_ROOT="$(ghq root)"
   if [[ "${REPO_DIR}" == "${GHQ_ROOT}"/* ]]; then
