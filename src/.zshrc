@@ -159,6 +159,40 @@ function gbc() {
     gf && git switch --no-track -c $1 origin/$(ghead)
 }
 
+# Create a new git worktree and open it in VSCode
+function gwc() {
+  if [ $# -lt 1 ]; then
+    echo -e "\e[31mNo branch name specified.\e[m" 1>&2
+    exit 1
+  fi
+  ROOT_REPO_DIR="$(git rev-parse --show-toplevel)"
+  REPO_DIR="$ROOT_REPO_DIR"
+  local GHQ_ROOT="$(ghq root)"
+  if [[ "${REPO_DIR}" == "${GHQ_ROOT}"/* ]]; then
+    REPO_DIR="${REPO_DIR#${GHQ_ROOT}/}"
+  fi
+  if [ $# -eq 2 ]; then
+    SOURCE_BRANCH="$2"
+  else
+    SOURCE_BRANCH="origin/$(ghead)"
+  fi
+  WORKTREE_DIR="${HOME}/.gitworktree/${REPO_DIR}/$1"
+  gf && git worktree add --no-track -b $1 "$WORKTREE_DIR" "$SOURCE_BRANCH"
+  (cd "$WORKTREE_DIR" || if [ -d .claude ]; then cd .claude; ln -s "$ROOT_REPO_DIR/.claude/settings.local.json" .; fi)
+  code "$WORKTREE_DIR"
+}
+
+# Open an existing git worktree in VSCode
+function gwo() {
+  if [ $# -lt 1 ]; then
+    WORKTREE_DIR=$(git worktree list | peco | awk '{ print $1 }')
+  else
+    WORKTREE_DIR="$1"
+  fi
+  echo "open: ${WORKTREE_DIR}"
+  code "$WORKTREE_DIR"
+}
+
 # Replace `origin` with forked repo
 function fetchfork() {
     GITHUB_USER=$(gh api /user --jq .login | tr -d '"')
