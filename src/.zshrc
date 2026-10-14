@@ -168,11 +168,12 @@ function gbc() {
 function gwc() {
   if [ $# -lt 1 ]; then
     echo -e "\e[31mNo branch name specified.\e[m" 1>&2
-    exit 1
+    return 1
   fi
+  local ROOT_REPO_DIR REPO_DIR GHQ_ROOT SOURCE_BRANCH WORKTREE_DIR
   ROOT_REPO_DIR="$(git rev-parse --show-toplevel)"
   REPO_DIR="$ROOT_REPO_DIR"
-  local GHQ_ROOT="$(ghq root)"
+  GHQ_ROOT="$(ghq root)"
   if [[ "${REPO_DIR}" == "${GHQ_ROOT}"/* ]]; then
     REPO_DIR="${REPO_DIR#${GHQ_ROOT}/}"
   fi
@@ -182,19 +183,30 @@ function gwc() {
     SOURCE_BRANCH="origin/$(ghead)"
   fi
   WORKTREE_DIR="${HOME}/.gitworktree/${REPO_DIR}/$1"
-  gf && git worktree add --no-track -b $1 "$WORKTREE_DIR" "$SOURCE_BRANCH"
-  (cd "$WORKTREE_DIR" || if [ -d .claude ]; then cd .claude; ln -s "$ROOT_REPO_DIR/.claude/settings.local.json" .; fi)
+  gf && git worktree add --no-track -b "$1" "$WORKTREE_DIR" "$SOURCE_BRANCH" || return 1
+  if [ -f "$ROOT_REPO_DIR/.claude/settings.local.json" ]; then
+    mkdir -p "$WORKTREE_DIR/.claude"
+    ln -sf "$ROOT_REPO_DIR/.claude/settings.local.json" "$WORKTREE_DIR/.claude/settings.local.json"
+  fi
   code "$WORKTREE_DIR"
 }
 
 # Open an existing git worktree in VSCode
 function gwo() {
+  local WORKTREE_DIR
   if [ $# -lt 1 ]; then
-    WORKTREE_DIR=$(git worktree list | peco | awk '{ print $1 }')
+    # `--porcelain` keeps paths intact even if they contain spaces. The first entry is the main worktree, so skip it.
+    WORKTREE_DIR="$(git worktree list --porcelain | sed -n 's/^worktree //p' | tail -n +2 | peco)"
   else
     WORKTREE_DIR="$1"
+    if [ ! -d "$WORKTREE_DIR" ]; then
+      echo -e "\e[31mNo such directory: ${WORKTREE_DIR}\e[m" 1>&2
+      return 1
+    fi
   fi
-  echo "open: ${WORKTREE_DIR}"
+  if [ -z "$WORKTREE_DIR" ]; then
+    return 1
+  fi
   code "$WORKTREE_DIR"
 }
 
