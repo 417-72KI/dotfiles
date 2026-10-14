@@ -195,8 +195,11 @@ function gwc() {
 function gwo() {
   local WORKTREE_DIR
   if [ $# -lt 1 ]; then
-    # `--porcelain` keeps paths intact even if they contain spaces. The first entry is the main worktree, so skip it.
-    WORKTREE_DIR="$(git worktree list --porcelain | sed -n 's/^worktree //p' | tail -n +2 | peco)"
+    WORKTREE_DIR="$(git worktree list --porcelain | awk '
+      /^worktree / { path = substr($0, 10) }
+      /^branch /   { branch = substr($0, 19) }
+      $0 == ""     { printf "[%s] %s\n", (branch ? branch : "detached"), path; branch = "" }
+    ' | peco | sed -E 's/^\[[^]]*\] //')"
   else
     WORKTREE_DIR="$1"
     if [ ! -d "$WORKTREE_DIR" ]; then
