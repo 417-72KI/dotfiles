@@ -152,11 +152,16 @@ function copy_current_branch() {
 }
 
 function gbc() {
-    if [ $# -ne 1 ]; then
-      echo -e "\e[31mNo branch name specified.\e[m" 1>&2
-      return
-    fi
-    gf && git switch --no-track -c $1 origin/$(ghead)
+  if [ $# -lt 1 ]; then
+    echo -e "\e[31mNo branch name specified.\e[m" 1>&2
+    return
+  fi
+  if [ $# -eq 2 ]; then
+    SOURCE_BRANCH=$2
+  else
+    SOURCE_BRANCH="origin/$(ghead)"
+  fi
+  gf && git switch --no-track -c $1 "$SOURCE_BRANCH"
 }
 
 # Create a new git worktree and open it in VSCode
