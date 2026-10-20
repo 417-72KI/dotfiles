@@ -59,6 +59,7 @@ alias grm='SKIP_POST_CHECKOUT=1 gf && git rebase origin/$(ghead)'
 alias grd='SKIP_POST_CHECKOUT=1 gf && git rebase origin/develop'
 alias gs='git switch $(gbpeco)'
 alias gsr='gf && git switch $(gba | grep -v "HEAD" | grep "origin" | sed 's@remotes/origin/@@' | peco)'
+alias gwl='git worktree list'
 alias gmb='gf && git merge --no-ff --no-edit $(gbapeco)'
 alias gmm='gf && git merge --no-ff --no-edit origin/$(ghead)'
 alias gmd='gf && git merge --no-ff --no-edit origin/develop'
@@ -164,6 +165,15 @@ function gbc() {
   gf && git switch --no-track -c $1 "$SOURCE_BRANCH"
 }
 
+# List git worktrees and select one interactively
+function ___gwselect() {
+  gwl --porcelain | awk '
+      /^worktree / { path = substr($0, 10) }
+      /^branch /   { branch = substr($0, 19) }
+      $0 == ""     { printf "[%s] %s\n", (branch ? branch : "detached"), path; branch = "" }
+    ' | peco | sed -E 's/^\[[^]]*\] //'
+}
+
 # Create a new git worktree and open it in VSCode
 function gwc() {
   if [ $# -lt 1 ]; then
@@ -198,11 +208,7 @@ function gwc() {
 function gwo() {
   local WORKTREE_DIR
   if [ $# -lt 1 ]; then
-    WORKTREE_DIR="$(git worktree list --porcelain | awk '
-      /^worktree / { path = substr($0, 10) }
-      /^branch /   { branch = substr($0, 19) }
-      $0 == ""     { printf "[%s] %s\n", (branch ? branch : "detached"), path; branch = "" }
-    ' | peco | sed -E 's/^\[[^]]*\] //')"
+    WORKTREE_DIR="$(___gwselect)"
   else
     WORKTREE_DIR="$1"
     if [ ! -d "$WORKTREE_DIR" ]; then
@@ -214,6 +220,24 @@ function gwo() {
     return 1
   fi
   code "$WORKTREE_DIR"
+}
+
+# Remove a git worktree
+function gwd() {
+  local WORKTREE_DIR
+  if [ $# -lt 1 ]; then
+    WORKTREE_DIR="$(___gwselect)"
+  else
+    WORKTREE_DIR="$1"
+    if [ ! -d "$WORKTREE_DIR" ]; then
+      echo -e "\e[31mNo such directory: ${WORKTREE_DIR}\e[m" 1>&2
+      return 1
+    fi
+  fi
+  if [ -z "$WORKTREE_DIR" ]; then
+    return 1
+  fi
+  git worktree remove "$WORKTREE_DIR"
 }
 
 # Replace `origin` with forked repo
