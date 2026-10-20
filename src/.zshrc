@@ -180,7 +180,9 @@ function gwc() {
     echo -e "\e[31mNo branch name specified.\e[m" 1>&2
     return 1
   fi
-  local ROOT_REPO_DIR REPO_DIR SOURCE_BRANCH WORKTREE_DIR
+  local ROOT_REPO_DIR REPO_DIR SOURCE_BRANCH WORKTREE_DIR BRANCH_NAME
+  # Replace slashes in the branch name with dashes for the worktree directory name.
+  BRANCH_NAME="${1//\//-}"
   # The first entry of `git worktree list` is always the main worktree, even when run from a linked one.
   ROOT_REPO_DIR="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
   REPO_DIR="$ROOT_REPO_DIR"
@@ -195,8 +197,8 @@ function gwc() {
   else
     SOURCE_BRANCH="origin/$(ghead)"
   fi
-  WORKTREE_DIR="${HOME}/.gitworktree/${REPO_DIR}/$1"
-  gf && git worktree add --no-track -b "$1" "$WORKTREE_DIR" "$SOURCE_BRANCH" || return 1
+  WORKTREE_DIR="${HOME}/.gitworktree/${REPO_DIR}/${BRANCH_NAME}"
+  gf && git worktree add --no-track -b "$BRANCH_NAME" "$WORKTREE_DIR" "$SOURCE_BRANCH" || return 1
   if [ -f "$ROOT_REPO_DIR/.claude/settings.local.json" ]; then
     mkdir -p "$WORKTREE_DIR/.claude"
     ln -sf "$ROOT_REPO_DIR/.claude/settings.local.json" "$WORKTREE_DIR/.claude/settings.local.json"
