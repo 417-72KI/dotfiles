@@ -170,11 +170,13 @@ function gwc() {
     echo -e "\e[31mNo branch name specified.\e[m" 1>&2
     return 1
   fi
-  local ROOT_REPO_DIR REPO_DIR GHQ_ROOT SOURCE_BRANCH WORKTREE_DIR
+  local ROOT_REPO_DIR REPO_DIR SOURCE_BRANCH WORKTREE_DIR
   # The first entry of `git worktree list` is always the main worktree, even when run from a linked one.
   ROOT_REPO_DIR="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
   REPO_DIR="$ROOT_REPO_DIR"
-  GHQ_ROOT="$(ghq root)"
+  if [ -z "$GHQ_ROOT" ]; then
+    GHQ_ROOT="$(ghq root)"
+  fi
   if [[ "${REPO_DIR}" == "${GHQ_ROOT}"/* ]]; then
     REPO_DIR="${REPO_DIR#${GHQ_ROOT}/}"
   fi
