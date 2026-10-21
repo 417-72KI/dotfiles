@@ -196,8 +196,17 @@ function gwc() {
     return 1
   fi
   local ROOT_REPO_DIR REPO_DIR SOURCE_BRANCH WORKTREE_DIR BRANCH_NAME
-  # Replace slashes in the branch name with dashes for the worktree directory name.
-  BRANCH_NAME="${1//\//-}"
+  # Remove a recognized branch prefix before replacing slashes with dashes.
+  # ref: https://conventionalbranch.org/#branch-naming-prefixes
+  case "$1" in
+    feature/*|feat/*|bugfix/*|fix/*|hotfix/*|release/*|chore/*|ai/*|copilot/*|cursor/*|claude/*|codex/*)
+      BRANCH_NAME="${1#*/}"
+      ;;
+    *)
+      BRANCH_NAME="$1"
+      ;;
+  esac
+  BRANCH_NAME="${BRANCH_NAME//\//-}"
   # The first entry of `git worktree list` is always the main worktree, even when run from a linked one.
   ROOT_REPO_DIR="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
   REPO_DIR="$ROOT_REPO_DIR"
