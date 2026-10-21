@@ -167,10 +167,25 @@ function gbc() {
 
 # List git worktrees and select one interactively
 function ___gwselect() {
-  gwl --porcelain | awk '
-      /^worktree / { path = substr($0, 10) }
+  local exclude_main=0
+  if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != "--exclude-main" ]; }; then
+    echo "Usage: ___gwselect [--exclude-main]" 1>&2
+    return 1
+  fi
+  if [ "$1" = "--exclude-main" ]; then
+    exclude_main=1
+  fi
+  gwl --porcelain | awk -v exclude_main="$exclude_main" '
+      /^worktree / {
+        path = substr($0, 10)
+        if (main_path == "") main_path = path
+      }
       /^branch /   { branch = substr($0, 19) }
-      $0 == ""     { printf "[%s] %s\n", (branch ? branch : "detached"), path; branch = "" }
+      $0 == ""     {
+        if (!exclude_main || path != main_path)
+          printf "[%s] %s\n", (branch ? branch : "detached"), path
+        branch = ""
+      }
     ' | peco | sed -E 's/^\[[^]]*\] //'
 }
 
@@ -228,7 +243,7 @@ function gwo() {
 function gwd() {
   local WORKTREE_DIR
   if [ $# -lt 1 ]; then
-    WORKTREE_DIR="$(___gwselect)"
+    WORKTREE_DIR="$(___gwselect --exclude-main)"
   else
     WORKTREE_DIR="$1"
     if [ ! -d "$WORKTREE_DIR" ]; then
