@@ -54,7 +54,6 @@ alias gout='gf && git checkout $(gbapeco)'
 alias glook='ghq get -s --look $(ghq list | peco)'
 alias gcode='code $(ghq root)/$(ghq list | peco)'
 alias gcp='git cherry-pick'
-alias grb='SKIP_POST_CHECKOUT=1 gf && git rebase $(gbapeco)'
 alias grm='SKIP_POST_CHECKOUT=1 gf && git rebase origin/$(ghead)'
 alias grd='SKIP_POST_CHECKOUT=1 gf && git rebase origin/develop'
 alias gs='git switch $(gbpeco)'
@@ -163,6 +162,15 @@ function gbc() {
     SOURCE_BRANCH="origin/$(ghead)"
   fi
   gf && git switch --no-track -c $1 "$SOURCE_BRANCH"
+}
+
+function grb() {
+  SKIP_POST_CHECKOUT=1 gf || return
+  if [ $# -ge 1 ]; then
+    git rebase "$@"
+  else
+    git rebase $(gbapeco)
+  fi
 }
 
 # List git worktrees and select one interactively
