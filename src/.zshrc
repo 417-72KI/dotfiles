@@ -203,18 +203,19 @@ function gwc() {
     echo -e "\e[31mNo branch name specified.\e[m" 1>&2
     return 1
   fi
-  local ROOT_REPO_DIR REPO_DIR SOURCE_BRANCH WORKTREE_DIR BRANCH_NAME
+  local ROOT_REPO_DIR REPO_DIR SOURCE_BRANCH WORKTREE_NAME WORKTREE_DIR BRANCH_NAME
+  BRANCH_NAME="$1"
   # Remove a recognized branch prefix before replacing slashes with dashes.
   # ref: https://conventionalbranch.org/#branch-naming-prefixes
   case "$1" in
     feature/*|feat/*|bugfix/*|fix/*|hotfix/*|release/*|chore/*|ai/*|copilot/*|cursor/*|claude/*|codex/*)
-      BRANCH_NAME="${1#*/}"
+      WORKTREE_NAME="${BRANCH_NAME#*/}"
       ;;
     *)
-      BRANCH_NAME="$1"
+      WORKTREE_NAME="$BRANCH_NAME"
       ;;
   esac
-  BRANCH_NAME="${BRANCH_NAME//\//-}"
+  WORKTREE_NAME="${WORKTREE_NAME//\//-}"
   # The first entry of `git worktree list` is always the main worktree, even when run from a linked one.
   ROOT_REPO_DIR="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
   REPO_DIR="$ROOT_REPO_DIR"
@@ -229,7 +230,7 @@ function gwc() {
   else
     SOURCE_BRANCH="origin/$(ghead)"
   fi
-  WORKTREE_DIR="${HOME}/.gitworktree/${REPO_DIR}/${BRANCH_NAME}"
+  WORKTREE_DIR="${HOME}/.gitworktree/${REPO_DIR}/${WORKTREE_NAME}"
   gf && git worktree add --no-track -b "$BRANCH_NAME" "$WORKTREE_DIR" "$SOURCE_BRANCH" || return 1
   if [ -f "$ROOT_REPO_DIR/.claude/settings.local.json" ]; then
     mkdir -p "$WORKTREE_DIR/.claude"
