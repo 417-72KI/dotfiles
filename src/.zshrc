@@ -37,16 +37,16 @@ alias gbpeco='gb | grep -v "HEAD" | peco | tr -d '"'"' '"'"' | tr -d '"'"'*'"'"'
 alias gbapeco='gba | grep -v "HEAD" | peco | tr -d '"'"' '"'"' | tr -d '"'"'*'"'"' | tr -d '"'"'+'"'"''
 
 function gclone() {
-    RESULT="$(ghq get -s $@ 2>&1)"
-    CLONE="$(echo "${RESULT}" | grep 'clone' | grep '\->' | sed -E 's/(.*) -> (.*)/\2/g')"
-    EXISTS="$(echo "${RESULT}"| grep 'exists' | sed -E 's/.*exists.* (\/.*)/\1/g')"
-    if [[ "${EXISTS}" != '' ]]; then
-      echo "open ${EXISTS}"
-      code "${EXISTS}"
-    elif [[ "${CLONE}" != '' ]]; then
-      echo "open ${CLONE}"
-      code "${CLONE}"
-    fi
+  RESULT="$(ghq get -s $@ 2>&1)"
+  CLONE="$(echo "${RESULT}" | grep 'clone' | grep '\->' | sed -E 's/(.*) -> (.*)/\2/g')"
+  EXISTS="$(echo "${RESULT}"| grep 'exists' | sed -E 's/.*exists.* (\/.*)/\1/g')"
+  if [[ "${EXISTS}" != '' ]]; then
+    echo "open ${EXISTS}"
+    code "${EXISTS}"
+  elif [[ "${CLONE}" != '' ]]; then
+    echo "open ${CLONE}"
+    code "${CLONE}"
+  fi
 }
 
 alias gclones='gclone --shallow'
@@ -54,11 +54,11 @@ alias gout='gf && git checkout $(gbapeco)'
 alias glook='ghq get -s --look $(ghq list | peco)'
 alias gcode='code $(ghq root)/$(ghq list | peco)'
 alias gcp='git cherry-pick'
-alias grb='SKIP_POST_CHECKOUT=1 gf && git rebase $(gbapeco)'
 alias grm='SKIP_POST_CHECKOUT=1 gf && git rebase origin/$(ghead)'
 alias grd='SKIP_POST_CHECKOUT=1 gf && git rebase origin/develop'
 alias gs='git switch $(gbpeco)'
 alias gsr='gf && git switch $(gba | grep -v "HEAD" | grep "origin" | sed 's@remotes/origin/@@' | peco)'
+alias gwl='git worktree list'
 alias gmb='gf && git merge --no-ff --no-edit $(gbapeco)'
 alias gmm='gf && git merge --no-ff --no-edit origin/$(ghead)'
 alias gmd='gf && git merge --no-ff --no-edit origin/develop'
@@ -121,11 +121,11 @@ function drun() {
 
 # Alias for Danger-Swift
 function danger-pr() {
-    if [ -f "Dangerfile.swift" ]; then
-      DANGER_GITHUB_API_TOKEN=$(gh auth token) danger-swift pr --danger-js-path "$(dirname $(which danger-swift))/danger" $(gh pr view --json url --jq '.url')
-    else # TODO: Support Danger-Ruby, Danger-JS or Danger-Kotlin
-      echo "Dangerfile.swift not found in the current directory." 1>&2
-    fi
+  if [ -f "Dangerfile.swift" ]; then
+    DANGER_GITHUB_API_TOKEN=$(gh auth token) danger-swift pr --danger-js-path "$(dirname $(which danger-swift))/danger" $(gh pr view --json url --jq '.url')
+  else # TODO: Support Danger-Ruby, Danger-JS or Danger-Kotlin
+    echo "Dangerfile.swift not found in the current directory." 1>&2
+  fi
 }
 
 # Other custom aliases or functions
@@ -138,13 +138,13 @@ alias codeprofile='code ~/.zprofile'
 alias codeprofile_local='code ~/.zprofile_local'
 
 function light() {
-    if [ -z "$2" ]; then
-      src="pbpaste"
-    else
-      src="cat $2"
-    fi
+  if [ -z "$2" ]; then
+    src="pbpaste"
+  else
+    src="cat $2"
+  fi
 
-    $src | highlight -O rtf --syntax $1 --font=Ricty --style=molokai --font-size 24 | pbcopy
+  $src | highlight -O rtf --syntax $1 --font=Ricty --style=molokai --font-size 24 | pbcopy
 }
 
 function copy_current_branch() {
@@ -152,60 +152,194 @@ function copy_current_branch() {
 }
 
 function gbc() {
-    if [ $# -ne 1 ]; then
-      echo -e "\e[31mNo branch name specified.\e[m" 1>&2
-      return
+  if [ $# -lt 1 ]; then
+    echo -e "\e[31mNo branch name specified.\e[m" 1>&2
+    return
+  fi
+  if [ $# -eq 2 ]; then
+    SOURCE_BRANCH=$2
+  else
+    SOURCE_BRANCH="origin/$(ghead)"
+  fi
+  gf && git switch --no-track -c $1 "$SOURCE_BRANCH"
+}
+
+function grb() {
+  SKIP_POST_CHECKOUT=1 gf || return
+  if [ $# -ge 1 ]; then
+    git rebase "$@"
+  else
+    git rebase $(gbapeco)
+  fi
+}
+
+# List git worktrees and select one interactively
+function ___gwselect() {
+  local exclude_main=0
+  if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != "--exclude-main" ]; }; then
+    echo "Usage: ___gwselect [--exclude-main]" 1>&2
+    return 1
+  fi
+  if [ "$1" = "--exclude-main" ]; then
+    exclude_main=1
+  fi
+  gwl --porcelain | awk -v exclude_main="$exclude_main" '
+      /^worktree / {
+        path = substr($0, 10)
+        if (main_path == "") main_path = path
+      }
+      /^branch /   { branch = substr($0, 19) }
+      $0 == ""     {
+        if (!exclude_main || path != main_path)
+          printf "[%s] %s\n", (branch ? branch : "detached"), path
+        branch = ""
+      }
+    ' | peco | sed -E 's/^\[[^]]*\] //'
+}
+
+# Create a new git worktree and open it in VSCode
+function gwc() {
+  if [ $# -lt 1 ]; then
+    echo -e "\e[31mNo branch name specified.\e[m" 1>&2
+    return 1
+  fi
+  local ROOT_REPO_DIR REPO_DIR SOURCE_BRANCH WORKTREE_NAME WORKTREE_DIR BRANCH_NAME
+  BRANCH_NAME="$1"
+  # Remove a recognized branch prefix before replacing slashes with dashes.
+  # ref: https://conventionalbranch.org/#branch-naming-prefixes
+  case "$1" in
+    feature/*|feat/*|bugfix/*|fix/*|hotfix/*|release/*|chore/*|ai/*|copilot/*|cursor/*|claude/*|codex/*)
+      WORKTREE_NAME="${BRANCH_NAME#*/}"
+      ;;
+    *)
+      WORKTREE_NAME="$BRANCH_NAME"
+      ;;
+  esac
+  WORKTREE_NAME="${WORKTREE_NAME//\//-}"
+  # The first entry of `git worktree list` is always the main worktree, even when run from a linked one.
+  ROOT_REPO_DIR="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
+  REPO_DIR="$ROOT_REPO_DIR"
+  if [ -z "$GHQ_ROOT" ]; then
+    GHQ_ROOT="$(ghq root)"
+  fi
+  if [[ "${REPO_DIR}" == "${GHQ_ROOT}"/* ]]; then
+    REPO_DIR="${REPO_DIR#${GHQ_ROOT}/}"
+  fi
+  if [ $# -eq 2 ]; then
+    SOURCE_BRANCH="$2"
+  else
+    SOURCE_BRANCH="origin/$(ghead)"
+  fi
+  WORKTREE_DIR="${HOME}/.gitworktree/${REPO_DIR}/${WORKTREE_NAME}"
+  gf && git worktree add --no-track -b "$BRANCH_NAME" "$WORKTREE_DIR" "$SOURCE_BRANCH" || return 1
+  if [ -f "$ROOT_REPO_DIR/.claude/settings.local.json" ]; then
+    mkdir -p "$WORKTREE_DIR/.claude"
+    ln -sf "$ROOT_REPO_DIR/.claude/settings.local.json" "$WORKTREE_DIR/.claude/settings.local.json"
+  fi
+  code "$WORKTREE_DIR"
+}
+
+# Open an existing git worktree in VSCode
+function gwo() {
+  local WORKTREE_DIR
+  if [ $# -lt 1 ]; then
+    WORKTREE_DIR="$(___gwselect)"
+  else
+    WORKTREE_DIR="$1"
+    if [ ! -d "$WORKTREE_DIR" ]; then
+      echo -e "\e[31mNo such directory: ${WORKTREE_DIR}\e[m" 1>&2
+      return 1
     fi
-    gf && git switch --no-track -c $1 origin/$(ghead)
+  fi
+  if [ -z "$WORKTREE_DIR" ]; then
+    return 1
+  fi
+  code "$WORKTREE_DIR"
+}
+
+# Switch current directory to a specific git worktree
+function gws() {
+  local WORKTREE_DIR
+  if [ $# -lt 1 ]; then
+    WORKTREE_DIR="$(___gwselect)"
+  else
+    WORKTREE_DIR="$1"
+    if [ ! -d "$WORKTREE_DIR" ]; then
+      echo -e "\e[31mNo such directory: ${WORKTREE_DIR}\e[m" 1>&2
+      return 1
+    fi
+  fi
+  if [ -z "$WORKTREE_DIR" ]; then
+    return 1
+  fi
+  (cd "$WORKTREE_DIR" || return 1; exec $SHELL)
+}
+
+# Remove a git worktree
+function gwd() {
+  local WORKTREE_DIR
+  if [ $# -lt 1 ]; then
+    WORKTREE_DIR="$(___gwselect --exclude-main)"
+  else
+    WORKTREE_DIR="$1"
+    if [ ! -d "$WORKTREE_DIR" ]; then
+      echo -e "\e[31mNo such directory: ${WORKTREE_DIR}\e[m" 1>&2
+      return 1
+    fi
+  fi
+  if [ -z "$WORKTREE_DIR" ]; then
+    return 1
+  fi
+  git worktree remove "$WORKTREE_DIR"
 }
 
 # Replace `origin` with forked repo
 function fetchfork() {
-    GITHUB_USER=$(gh api /user --jq .login | tr -d '"')
-    UPSTREAM="$(git remote -v | grep origin | head -1 | awk '{ print $2 }')"
-    if [[ "${UPSTREAM}" = *":${GITHUB_USER}/"* ]];then
-      echo 'Already forked, or my own repo.'
-      return
-    fi
-    git remote rename origin upstream
-    FORKED="$(echo "${UPSTREAM}" | sed -E "s/^(.*)\/(.*)\/(.*)$/\1\/${GITHUB_USER}\/\3/g")"
-    git remote add origin "${FORKED}"
-    git fetch --all --prune
+  GITHUB_USER=$(gh api /user --jq .login | tr -d '"')
+  UPSTREAM="$(git remote -v | grep origin | head -1 | awk '{ print $2 }')"
+  if [[ "${UPSTREAM}" = *":${GITHUB_USER}/"* ]];then
+    echo 'Already forked, or my own repo.'
+    return
+  fi
+  git remote rename origin upstream
+  FORKED="$(echo "${UPSTREAM}" | sed -E "s/^(.*)\/(.*)\/(.*)$/\1\/${GITHUB_USER}\/\3/g")"
+  git remote add origin "${FORKED}"
+  git fetch --all --prune
 }
 
 # Record iPhone simulator
 function capsim() {
-    trap '' 2 # Ignore Ctrl+C
-    TIMESTAMP=$(date '+%Y%m%d%H%M%S')
-    xcrun simctl io booted recordVideo ~/Desktop/capture-$TIMESTAMP.mp4
-    trap 2 # Restore Ctrl+C
+  trap '' 2 # Ignore Ctrl+C
+  TIMESTAMP=$(date '+%Y%m%d%H%M%S')
+  xcrun simctl io booted recordVideo ~/Desktop/capture-$TIMESTAMP.mp4
+  trap 2 # Restore Ctrl+C
 
-    read yn\?"Convert to gif? (y/N): "
-    case "$yn" in [yY]*) ;; *) echo "abort." ; return ;; esac
+  read yn\?"Convert to gif? (y/N): "
+  case "$yn" in [yY]*) ;; *) echo "abort." ; return ;; esac
 
-    ffmpeg -i ~/Desktop/capture-$TIMESTAMP.mp4 -r 24 ~/Desktop/capture-$TIMESTAMP.gif
+  ffmpeg -i ~/Desktop/capture-$TIMESTAMP.mp4 -r 24 ~/Desktop/capture-$TIMESTAMP.gif
 }
 
 # Record Android device via adb
 function adbcap() {
-    TIMESTAMP=$(date '+%Y%m%d%H%M%S')
-    echo "Recording: /sdcard/capture-$TIMESTAMP.mp4"
+  TIMESTAMP=$(date '+%Y%m%d%H%M%S')
+  echo "Recording: /sdcard/capture-$TIMESTAMP.mp4"
 
-    trap "echo 'Press ^C again to stop recording.'" 2
-    adb shell screenrecord /sdcard/capture-$TIMESTAMP.mp4
-    sleep 5
-    trap 2
+  trap "echo 'Press ^C again to stop recording.'" 2
+  adb shell screenrecord /sdcard/capture-$TIMESTAMP.mp4
+  sleep 5
+  trap 2
 
-    adb pull /sdcard/capture-$TIMESTAMP.mp4 ~/Desktop/capture-$TIMESTAMP.mp4
-    adb shell rm /sdcard/capture-$TIMESTAMP.mp4
+  adb pull /sdcard/capture-$TIMESTAMP.mp4 ~/Desktop/capture-$TIMESTAMP.mp4
+  adb shell rm /sdcard/capture-$TIMESTAMP.mp4
 }
 
 # Screenshot Android device via adb
 function adbss() {
-    TIMESTAMP=$(date '+%Y%m%d%H%M%S')
-    adb shell screencap -p /sdcard/screenshot-$TIMESTAMP.png
-    adb pull /sdcard/screenshot-$TIMESTAMP.png ~/Desktop/screenshot-$TIMESTAMP.png
-    adb shell rm /sdcard/screenshot-$TIMESTAMP.png
+  TIMESTAMP=$(date '+%Y%m%d%H%M%S')
+  adb shell screencap -p /sdcard/screenshot-$TIMESTAMP.png
+  adb pull /sdcard/screenshot-$TIMESTAMP.png ~/Desktop/screenshot-$TIMESTAMP.png
+  adb shell rm /sdcard/screenshot-$TIMESTAMP.png
 }
 
 # Convert MOV to animated GIF
