@@ -257,6 +257,24 @@ function gwo() {
   code "$WORKTREE_DIR"
 }
 
+# Switch current directory to a specific git worktree
+function gws() {
+  local WORKTREE_DIR
+  if [ $# -lt 1 ]; then
+    WORKTREE_DIR="$(___gwselect)"
+  else
+    WORKTREE_DIR="$1"
+    if [ ! -d "$WORKTREE_DIR" ]; then
+      echo -e "\e[31mNo such directory: ${WORKTREE_DIR}\e[m" 1>&2
+      return 1
+    fi
+  fi
+  if [ -z "$WORKTREE_DIR" ]; then
+    return 1
+  fi
+  (cd "$WORKTREE_DIR" || return 1; exec $SHELL)
+}
+
 # Remove a git worktree
 function gwd() {
   local WORKTREE_DIR
