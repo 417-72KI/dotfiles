@@ -259,6 +259,16 @@ function gwo() {
 
 # Switch current directory to a specific git worktree
 function gws() {
+  local -A opthash
+  zparseopts -D -A opthash -- s -new-shell
+  
+  local NEW_SHELL
+  if [ -n "${opthash[(i)-s]}" ] || [ -n "${opthash[(i)--new-shell]}" ]; then
+    NEW_SHELL=1
+  else
+    NEW_SHELL=0
+  fi
+
   local WORKTREE_DIR
   if [ $# -lt 1 ]; then
     WORKTREE_DIR="$(___gwselect)"
@@ -272,7 +282,11 @@ function gws() {
   if [ -z "$WORKTREE_DIR" ]; then
     return 1
   fi
-  (cd "$WORKTREE_DIR" || return 1; exec $SHELL)
+  if [ "$NEW_SHELL" -eq 1 ]; then
+    (cd "$WORKTREE_DIR" || return 1; exec $SHELL)
+  else
+    cd "$WORKTREE_DIR" || return 1
+  fi
 }
 
 # Remove a git worktree
