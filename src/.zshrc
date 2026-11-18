@@ -183,18 +183,33 @@ function ___gwselect() {
   if [ "$1" = "--exclude-main" ]; then
     exclude_main=1
   fi
-  gwl --porcelain | awk -v exclude_main="$exclude_main" '
-      /^worktree / {
-        path = substr($0, 10)
-        if (main_path == "") main_path = path
-      }
-      /^branch /   { branch = substr($0, 19) }
-      $0 == ""     {
-        if (!exclude_main || path != main_path)
-          printf "[%s] %s\n", (branch ? branch : "detached"), path
-        branch = ""
-      }
-    ' | peco | sed -E 's/^\[[^]]*\] //'
+  # Parse NUL-delimited output so paths are not C-quoted by git.
+  local -a wt_paths labels
+  local line wt_path main_path branch selected
+  while IFS= read -r -d '' line; do
+    case "$line" in
+      worktree\ *)
+        wt_path="${line#worktree }"
+        [ -z "$main_path" ] && main_path="$wt_path"
+        ;;
+      branch\ *)
+        branch="${line#branch refs/heads/}"
+        ;;
+      "")
+        if [ "$exclude_main" -eq 0 ] || [ "$wt_path" != "$main_path" ]; then
+          wt_paths+=("$wt_path")
+          # Keep raw paths separately; labels are display-only (control chars made visible).
+          labels+=("${#wt_paths}"$'\t'"[${branch:-detached}] ${(V)wt_path}")
+        fi
+        branch=""
+        ;;
+    esac
+  done < <(git worktree list --porcelain -z)
+  selected="$(print -rl -- "${labels[@]}" | peco)" || return 1
+  [ -z "$selected" ] && return 1
+  local idx="${selected%%$'\t'*}"
+  [[ "$idx" == <-> ]] || return 1
+  print -r -- "${wt_paths[$idx]}"
 }
 
 # Create a new git worktree and open it in VSCode
@@ -203,7 +218,7 @@ function gwc() {
     echo -e "\e[31mNo branch name specified.\e[m" 1>&2
     return 1
   fi
-  local ROOT_REPO_DIR REPO_DIR SOURCE_BRANCH WORKTREE_NAME WORKTREE_DIR BRANCH_NAME
+  local ROOT_REPO_DIR REPO_DIR SOURCE_BRANCH WORKTREE_NAME WORKTREE_DIR BRANCH_NAME FIRST_LINE
   BRANCH_NAME="$1"
   # Remove a recognized branch prefix before replacing slashes with dashes.
   # ref: https://conventionalbranch.org/#branch-naming-prefixes
@@ -217,7 +232,9 @@ function gwc() {
   esac
   WORKTREE_NAME="${WORKTREE_NAME//\//-}"
   # The first entry of `git worktree list` is always the main worktree, even when run from a linked one.
-  ROOT_REPO_DIR="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
+  # Read with -z so that the path is not C-quoted by git.
+  IFS= read -r -d '' FIRST_LINE < <(git worktree list --porcelain -z)
+  ROOT_REPO_DIR="${FIRST_LINE#worktree }"
   REPO_DIR="$ROOT_REPO_DIR"
   if [ -z "$GHQ_ROOT" ]; then
     GHQ_ROOT="$(ghq root)"
